@@ -11,7 +11,7 @@ output "password_secret_arn" {
 }
 
 output "card_request_queue_url" {
-  value       = aws_sqs_queue.card_request_queue.url
+  value       = data.aws_sqs_queue.create-request-card-sqs.url
   description = "URL de la cola SQS para solicitudes de tarjeta"
 }
 

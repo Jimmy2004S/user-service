@@ -38,18 +38,48 @@ export const handler: APIGatewayProxyHandler = async (event) => {
     const sqsClient = new SQSClient({});
     const queueUrl = process.env.CARD_REQUEST_QUEUE_URL;
     if (queueUrl) {
-      const messageBody = JSON.stringify({
-        uuid,
-        name: user.name,
-        lastName: user.lastName,
-        email: user.email,
-        document: user.document,
-        createdAt: user.createdAt,
+      // Enviar solicitudes de tarjetas (DEBIT y CREDIT)
+      const debitMessage = JSON.stringify({
+        userId: uuid,
+        request: "DEBIT",
       });
-      await sqsClient.send(new SendMessageCommand({
-        QueueUrl: queueUrl,
-        MessageBody: messageBody,
-      }));
+
+      const creditMessage = JSON.stringify({
+        userId: uuid,
+        request: "CREDIT",
+      });
+
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: queueUrl,
+          MessageBody: debitMessage,
+        })
+      );
+
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: queueUrl,
+          MessageBody: creditMessage,
+        })
+      );
+    }
+
+    // Enviar mensaje a SQS de notificaciones
+    const notificationsQueueUrl = process.env.NOTIFICATIONS_QUEUE_URL;
+    if (notificationsQueueUrl) {
+      const notificationBody = JSON.stringify({
+        type: "WELCOME",
+        data: {
+          fullName: `${user.name} ${user.lastName}`,
+        },
+      });
+
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: notificationsQueueUrl,
+          MessageBody: notificationBody,
+        })
+      );
     }
 
     return {

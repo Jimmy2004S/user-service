@@ -70,19 +70,23 @@ resource "aws_iam_role_policy_attachment" "s3_attach" {
 }
 
 # SQS (envío de mensajes)
-resource "aws_iam_policy" "sqs_policy" {
-  name   = "${local.name_prefix}-sqs-policy"
+resource "aws_iam_role_policy" "lambda_sqs_policy" {
+  name = "${local.name_prefix}-lambda-sqs"
+  role = aws_iam_role.lambda_role.id
+
   policy = jsonencode({
     Version = "2012-10-17",
-    Statement = [{
-      Effect   = "Allow",
-      Action   = ["sqs:SendMessage"],
-      Resource = [aws_sqs_queue.card_request_queue.arn]
-    }]
+    Statement = [
+      {
+        Effect   = "Allow",
+        Action   = ["sqs:SendMessage"],
+        Resource = [
+          data.aws_sqs_queue.create-request-card-sqs.arn,
+          data.aws_sqs_queue.notification-email-sqs.arn
+        ]
+      }
+    ]
   })
 }
 
-resource "aws_iam_role_policy_attachment" "sqs_attach" {
-  role       = aws_iam_role.lambda_role.name
-  policy_arn = aws_iam_policy.sqs_policy.arn
-}
+

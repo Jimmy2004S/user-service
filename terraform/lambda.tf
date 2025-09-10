@@ -1,8 +1,3 @@
-############################################
-# Resolver alias/aws/lambda -> KEY ARN real
-# (Lambda NO acepta ARN de alias, necesita ARN de key)
-############################################
-
 # Alias administrado por AWS para Lambda
 data "aws_kms_alias" "lambda_managed_alias" {
   name = "alias/aws/lambda"
@@ -24,13 +19,12 @@ locals {
     SECRET_ID              = aws_secretsmanager_secret.password_secret.id
     JWT_EXP_HOURS          = "12"
     BCRYPT_SALT_ROUNDS     = "12"
-    CARD_REQUEST_QUEUE_URL = aws_sqs_queue.card_request_queue.url
+    CARD_REQUEST_QUEUE_URL   = data.aws_sqs_queue.create-request-card-sqs.url
+    NOTIFICATIONS_QUEUE_URL  = data.aws_sqs_queue.notification-email-sqs.url
   }
 }
 
-#####################################################
 # ---------- Register ----------
-#####################################################
 data "archive_file" "register" {
   type        = "zip"
   source_file = "${path.module}/../dist/register.js"
@@ -55,9 +49,7 @@ resource "aws_lambda_function" "register" {
   tags = { Project = local.project, Stage = local.stage }
 }
 
-#####################################################
 # ---------- Login ----------
-#####################################################
 data "archive_file" "login" {
   type        = "zip"
   source_file = "${path.module}/../dist/login.js"
@@ -81,9 +73,7 @@ resource "aws_lambda_function" "login" {
   tags = { Project = local.project, Stage = local.stage }
 }
 
-#####################################################
 # ---------- Update Profile ----------
-#####################################################
 data "archive_file" "updateProfile" {
   type        = "zip"
   source_file = "${path.module}/../dist/updateProfile.js"
@@ -107,9 +97,7 @@ resource "aws_lambda_function" "updateProfile" {
   tags = { Project = local.project, Stage = local.stage }
 }
 
-#####################################################
 # ---------- Upload Avatar ----------
-#####################################################
 data "archive_file" "upload_avatar" {
   type        = "zip"
   source_file = "${path.module}/../dist/uploadAvatar.js"
@@ -133,9 +121,7 @@ resource "aws_lambda_function" "upload_avatar" {
   tags = { Project = local.project, Stage = local.stage }
 }
 
-#####################################################
 # ---------- Get Profile ----------
-#####################################################
 data "archive_file" "get_profile" {
   type        = "zip"
   source_file = "${path.module}/../dist/getProfile.js"

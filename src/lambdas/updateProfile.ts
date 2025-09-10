@@ -2,6 +2,7 @@ import { APIGatewayProxyHandlerV2 } from "aws-lambda";
 import { z } from "zod";
 import { badRequest, json, ok } from "../utils/http";
 import { updateUserByUuid } from "../repositories/users";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const schema = z.object({
   address: z.string().min(2).optional(),
@@ -20,6 +21,25 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
       address: input.address,
       phone: input.phone,
     });
+
+    const sqsClient = new SQSClient({});
+    const notificationsQueueUrl = process.env.NOTIFICATIONS_QUEUE_URL;
+    // Enviar notificación USER.UPDATE
+    if (notificationsQueueUrl) {
+      const updateMessage = JSON.stringify({
+        type: "USER.UPDATE",
+        data: {
+          date: new Date().toISOString(),
+        },
+      });
+
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: notificationsQueueUrl,
+          MessageBody: updateMessage,
+        })
+      );
+    }
 
     return ok({ message: "Profile updated", user: updated });
   } catch (err: any) {

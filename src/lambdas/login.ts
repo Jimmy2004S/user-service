@@ -5,6 +5,7 @@ import { findUserByEmail } from "../repositories/users";
 import { verifyPassword } from "../utils/crypto";
 import { signJwt } from "../utils/jwt";
 import "dotenv/config";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const schema = z.object({
   email: z.string().email(),
@@ -23,6 +24,26 @@ export const handler: APIGatewayProxyHandlerV2 = async (event) => {
     if (!okPwd) return unauthorized("Credenciales inválidas");
 
     const token = await signJwt(user.uuid);
+
+    const sqsClient = new SQSClient({});
+    const notificationsQueueUrl = process.env.NOTIFICATIONS_QUEUE_URL;
+    // Enviar notificación USER.LOGIN
+    if (notificationsQueueUrl) {
+      const loginMessage = JSON.stringify({
+        type: "USER.LOGIN",
+        data: {
+          date: new Date().toISOString(),
+        },
+      });
+
+      await sqsClient.send(
+        new SendMessageCommand({
+          QueueUrl: notificationsQueueUrl,
+          MessageBody: loginMessage,
+        })
+      );
+    }
+
     return ok({ token });
   } catch (err: any) {
     if (err?.name === "ZodError")
