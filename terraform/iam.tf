@@ -87,3 +87,20 @@ resource "aws_iam_role_policy_attachment" "sqs_attach" {
   role       = aws_iam_role.lambda_role.name
   policy_arn = aws_iam_policy.sqs_policy.arn
 }
+
+resource "aws_iam_policy" "kms_policy" {
+  name = "${local.name_prefix}-kms-policy"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [{
+      Effect = "Allow",
+      Action = ["kms:Decrypt"],
+      Resource = "arn:aws:kms:us-west-1:149078755102:key/b34ad03b-6791-4848-b5d9-5c89afb09b4e"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "kms_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = aws_iam_policy.kms_policy.arn
+}
